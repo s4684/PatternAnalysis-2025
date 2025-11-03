@@ -18,8 +18,8 @@ class OasisDataset(Dataset):
     """
 
     def __init__(self, data_dir, mask_dir, subset_size=-1):
-        self.data_paths = [data_dir + file for file in listdir(data_dir)[:subset_size]]
-        self.mask_paths = [mask_dir + file for file in listdir(mask_dir)[:subset_size]]
+        self.data_paths = [data_dir + "/" + file for file in listdir(data_dir)[:subset_size]]
+        self.mask_paths = [mask_dir + "/" + file for file in listdir(mask_dir)[:subset_size]]
 
         if (subset_size < 0 or len(self.data_paths) < subset_size):
             self.subset_size = len(self.data_paths)
@@ -38,9 +38,10 @@ class OasisDataset(Dataset):
 
         # Read and load image data
         img = Image.open(self.data_paths[idx])
-        img_data = torch.from_numpy(np.resize(np.array(img.getdata(), dtype=np.float32), img.size))
+        img_data = np.resize(np.array(img.getdata(), dtype=np.float32), img.size)
 
         img_data = (img_data - img_data.mean()) / (img_data.std() + 1e-6)
+        img_data = torch.from_numpy(img_data).unsqueeze(0).float()
 
         msk = Image.open(self.mask_paths[idx])
         msk_data = torch.from_numpy(OasisDataset.decode_mask(np.resize(np.array(msk.getdata(), dtype=np.int64), msk.size)))
@@ -80,7 +81,7 @@ class OasisDataset(Dataset):
         return enc_msk
 
 
-def get_oasis_dataloaders(data_dir, batch_size):
+def get_oasis_dataloaders(data_dir, batch_size, subset_size=-1):
     IMG_TRAIN_PATH = "keras_png_slices_train"
     MSK_TRAIN_PATH = "keras_png_slices_seg_train"
     IMG_TEST_PATH = "keras_png_slices_test"
@@ -88,12 +89,12 @@ def get_oasis_dataloaders(data_dir, batch_size):
     IMG_VAL_PATH = "keras_png_slices_validate"
     MSK_VAL_PATH = "keras_png_slices_seg_validate"
 
-    ds_train = OasisDataset(data_dir + IMG_TRAIN_PATH, data_dir + MSK_TRAIN_PATH)
-    ds_test = OasisDataset(data_dir + IMG_TEST_PATH, data_dir + MSK_TEST_PATH)
-    ds_validate = OasisDataset(data_dir + IMG_VAL_PATH, data_dir + MSK_VAL_PATH)
+    ds_train = OasisDataset(data_dir + IMG_TRAIN_PATH, data_dir + MSK_TRAIN_PATH, subset_size=subset_size)
+    ds_test = OasisDataset(data_dir + IMG_TEST_PATH, data_dir + MSK_TEST_PATH, subset_size=subset_size // 2 if subset_size else -1)
+    ds_validate = OasisDataset(data_dir + IMG_VAL_PATH, data_dir + MSK_VAL_PATH, subset_size=subset_size // 2 if subset_size else -1)
 
-    dl_train = DataLoader(ds_train, batch_size, shuffle=True)
-    dl_test = DataLoader(ds_test, batch_size, shuffle=False)
-    dl_validate = DataLoader(ds_validate, batch_size, shuffle=False)
+    dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
+    dl_test = DataLoader(ds_test, batch_size=batch_size, shuffle=False)
+    dl_validate = DataLoader(ds_validate, batch_size=batch_size, shuffle=False)
 
     return dl_train, dl_test, dl_validate

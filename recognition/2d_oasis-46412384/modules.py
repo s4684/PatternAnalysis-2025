@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -60,7 +61,7 @@ class UNet(nn.Module):
     def __init__(self, in_chls=1, num_classes=4, base_chls=64):
         super().__init__()
 
-        c = [base_chls * 2**i for i in range(0, 5)]
+        c = [base_chls * 2**i for i in range(5)]
 
         self.input = InConv(in_chls, base_chls)
         self.down1 = DownLayer(c[0], c[1])
@@ -102,7 +103,7 @@ class MCDiceLoss(nn.Module):
         probs = logits.softmax(dim=1)
         B, C, H, W = probs.shape
 
-        target_oh = F.one_hot(target, num_classes=num_classes).permute(0, 3, 1, 2).float()
+        target_oh = F.one_hot(target, num_classes=C).permute(0, 3, 1, 2).float()
 
         probs_flat = probs.reshape(B, C, -1)
         target_flat = target_oh.reshape(B, C, -1)
