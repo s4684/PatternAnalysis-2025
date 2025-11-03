@@ -65,7 +65,7 @@ def evaluate(model, dl, crit, dev="cpu"):
 
 def train(model, dl_train, dl_test, epochs=20, visualise_every=10):
     model.to(Config.DEVICE)
-    print("Starting model training on %s" % Config.DEVICE)
+    print("\nStarting model training on %s" % Config.DEVICE)
 
     crit = MCDiceLoss()
     # Use AdaM optimiser
@@ -86,7 +86,7 @@ def train(model, dl_train, dl_test, epochs=20, visualise_every=10):
             Config.DEVICE
         )
 
-        test_loss =evaluate(
+        test_loss = evaluate(
             model, 
             dl_test,
             crit,
