@@ -94,6 +94,6 @@ def get_oasis_dataloaders(data_dir, batch_size):
 
     dl_train = DataLoader(ds_train, batch_size, shuffle=True)
     dl_test = DataLoader(ds_test, batch_size, shuffle=False)
-    dl_validate = DataLoader(dl_validate, batch_size, shuffle=False)
+    dl_validate = DataLoader(ds_validate, batch_size, shuffle=False)
 
     return dl_train, dl_test, dl_validate
