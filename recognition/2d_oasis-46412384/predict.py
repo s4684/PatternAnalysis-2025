@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from train import Config, evaluate
 from dataset import get_oasis_dataloaders
 from modules import UNet, MCDiceLoss
@@ -10,18 +11,20 @@ if (__name__ == "__main__"):
 
     # Read model data from save file
     model.load_state_dict(torch.load(Config.MODEL_SAVE_FILE, map_location=Config.DEVICE))
-    train_losses, validate_losses, test_losses = torch.load(Config.LOSS_SAVE_FILE)
+    train_loss, train_dice, validate_losses, validate_dice = torch.load(Config.LOSS_SAVE_FILE)
 
     print("\nStarting model evaluation")
 
-    crit = MCDiceLoss()
+    crit = nn.CrossEntropyLoss()
+    dice_fn = MCDiceLoss()
 
-    test_loss = evaluate(
-        model, 
-        dl_test, 
-        crit, 
-        Config.DEVICE,
+    test_loss, test_dice= evaluate(
+        model=model, 
+        dl=dl_test, 
+        crit=crit, 
+        dice_fn=dice_fn,
+        dev=Config.DEVICE,
         display=True
     )
  
-    print("\t[ Eval ]\tValidate: %6.5f" % test_loss)
+    print("\t[ Eval ]\tValidate: L=%6.5f D=%6.5f" % (test_loss, test_dice))

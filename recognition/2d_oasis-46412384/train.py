@@ -14,21 +14,22 @@ class Config:
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    SUBSET_SIZE = -1
+    SUBSET_SIZE = 100
 
     LEARN_RATE = 1e-3
 
     IN_CHANNELS = 1
     NUM_CLASSES = 4
     BATCH_SIZE = 4
-    NUM_EPOCHS = 20
+    NUM_EPOCHS = 6
     DISPLAY_EVERY = 2
 
     display_count = 0
 
 
-def train_epoch(model, dl, optim, crit, num_classes, dev="cpu", display=False):
+def train_epoch(model, dl, optim, crit, dice_fn, num_classes, dev="cpu", display=False):
     loss = 0
+    dice = 0
 
     model.train()
     
@@ -46,15 +47,19 @@ def train_epoch(model, dl, optim, crit, num_classes, dev="cpu", display=False):
         bat_loss = crit(logits, msks)
         bat_loss.backward()
 
+        bat_dice = dice_fn(logits, msks).mean()
+
         optim.step()
 
         loss += bat_loss.item()
+        dice += bat_dice.item()
 
-    return loss / len(dl)
+    return loss / len(dl), dice / len(dl)
 
 
-def evaluate(model, dl, crit, dev="cpu", display=False):
+def evaluate(model, dl, crit, dice_fn, dev="cpu", display=False):
     loss = 0
+    dice = 0
 
     model.eval()
 
@@ -67,10 +72,13 @@ def evaluate(model, dl, crit, dev="cpu", display=False):
         if (display and bat_idx == 0):
             display_batch(imgs, msks, logits, save_file="eval.png")
 
-        bat_loss = crit(logits, msks).mean()
+        bat_loss = crit(logits, msks)
+        bat_dice = dice_fn(logits, msks).mean()
+
         loss += bat_loss.item()
+        dice += bat_dice.item()
     
-    return loss / len(dl)
+    return loss / len(dl), dice / len(dl)
 
 
 def display_batch(imgs, msks, logits, save_file=None):
@@ -116,47 +124,56 @@ def train(model, dl_train, dl_validate, epochs=20, display_every=10):
     model.to(Config.DEVICE)
     print("\nStarting model training on %s" % Config.DEVICE)
 
-    crit = MCDiceLoss()
+    crit = nn.CrossEntropyLoss()
+    dice_fn = MCDiceLoss()
     # Use AdaM optimiser
     optim = Adam(model.parameters(), lr=Config.LEARN_RATE)
 
     train_losses = []
+    train_dices = []
+
     validate_losses = []
+    validate_dices = []
 
     for ep_idx in range(1, epochs + 1):
         print("\t[ Epoch %d / %d ]" % (ep_idx, epochs), end="", flush=True)
         
-        train_loss = train_epoch(
-            model,
-            dl_train,
-            optim,
-            crit,
-            Config.NUM_CLASSES,
-            Config.DEVICE,
-            not bool(ep_idx % display_every)
+        train_loss, train_dice = train_epoch(
+            model=model,
+            dl=dl_train,
+            optim=optim,
+            crit=crit,
+            dice_fn=dice_fn,
+            num_classes=Config.NUM_CLASSES,
+            dev=Config.DEVICE,
+            display=not bool(ep_idx % display_every)
         )
 
-        validate_loss = evaluate(
-            model, 
-            dl_validate,
-            crit,
-            Config.DEVICE
+        validate_loss, validate_dice = evaluate(
+            model=model, 
+            dl=dl_validate,
+            crit=crit,
+            dice_fn=dice_fn,
+            dev=Config.DEVICE,
+            display=False
         )
 
-        print("\tTrain: %6.5f\tValidate: %6.5f" % (train_loss, validate_loss))
+        print("\tTrain: L=%6.5f D=%6.5f\tValidate: L=%6.5f D=%6.5f" % (train_loss, train_dice, validate_loss, validate_dice))
 
         train_losses.append(train_loss)
+        train_dices.append(train_dice)
         validate_losses.append(validate_loss)
+        validate_dices.append(validate_dice)
 
     print("Training complete!")
 
-    return train_losses, validate_losses
+    return train_losses, train_dices, validate_losses, validate_dices
 
 
 if (__name__ == "__main__"):
     dl_train, dl_validate, _ = get_oasis_dataloaders(Config.DATA_DIR, Config.BATCH_SIZE, Config.SUBSET_SIZE)
     model = UNet(Config.IN_CHANNELS, Config.NUM_CLASSES)
-    train_loss, validate_loss = train(model, dl_train, dl_validate, epochs=Config.NUM_EPOCHS, display_every=Config.DISPLAY_EVERY)
+    train_loss, train_dice, validate_loss, validate_dice = train(model, dl_train, dl_validate, epochs=Config.NUM_EPOCHS, display_every=Config.DISPLAY_EVERY)
 
     torch.save(model.state_dict(), Config.MODEL_SAVE_FILE)
-    torch.save([train_loss, validate_loss, []], Config.LOSS_SAVE_FILE)
+    torch.save([train_loss, train_dice, validate_loss, validate_dice], Config.LOSS_SAVE_FILE)
