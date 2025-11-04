@@ -20,7 +20,8 @@ if (__name__ == "__main__"):
         model, 
         dl_validate, 
         crit, 
-        Config.DEVICE
+        Config.DEVICE,
+        display=True
     )
  
     print("\t[ Eval ]\tValidate: %6.5f" % validate_loss)
