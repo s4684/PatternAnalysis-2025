@@ -84,17 +84,17 @@ class OasisDataset(Dataset):
 def get_oasis_dataloaders(data_dir, batch_size, subset_size=-1):
     IMG_TRAIN_PATH = "keras_png_slices_train"
     MSK_TRAIN_PATH = "keras_png_slices_seg_train"
-    IMG_TEST_PATH = "keras_png_slices_test"
-    MSK_TEST_PATH = "keras_png_slices_seg_test"
     IMG_VAL_PATH = "keras_png_slices_validate"
     MSK_VAL_PATH = "keras_png_slices_seg_validate"
+    IMG_TEST_PATH = "keras_png_slices_test"
+    MSK_TEST_PATH = "keras_png_slices_seg_test"
 
     ds_train = OasisDataset(data_dir + IMG_TRAIN_PATH, data_dir + MSK_TRAIN_PATH, subset_size=subset_size)
-    ds_test = OasisDataset(data_dir + IMG_TEST_PATH, data_dir + MSK_TEST_PATH, subset_size=subset_size // 2 if subset_size else -1)
     ds_validate = OasisDataset(data_dir + IMG_VAL_PATH, data_dir + MSK_VAL_PATH, subset_size=subset_size // 2 if subset_size else -1)
+    ds_test = OasisDataset(data_dir + IMG_TEST_PATH, data_dir + MSK_TEST_PATH, subset_size=subset_size // 2 if subset_size else -1)
 
     dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
-    dl_test = DataLoader(ds_test, batch_size=batch_size, shuffle=False)
     dl_validate = DataLoader(ds_validate, batch_size=batch_size, shuffle=False)
+    dl_test = DataLoader(ds_test, batch_size=batch_size, shuffle=False)
 
-    return dl_train, dl_test, dl_validate
+    return dl_train, dl_validate, dl_test

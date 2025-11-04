@@ -14,7 +14,7 @@ class Config:
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    SUBSET_SIZE = 500
+    SUBSET_SIZE = -1
 
     LEARN_RATE = 1e-3
 
@@ -112,7 +112,7 @@ def display_batch(imgs, msks, logits, save_file=None):
     Config.display_count += 1
 
 
-def train(model, dl_train, dl_test, epochs=20, display_every=10):
+def train(model, dl_train, dl_validate, epochs=20, display_every=10):
     model.to(Config.DEVICE)
     print("\nStarting model training on %s" % Config.DEVICE)
 
@@ -121,7 +121,7 @@ def train(model, dl_train, dl_test, epochs=20, display_every=10):
     optim = Adam(model.parameters(), lr=Config.LEARN_RATE)
 
     train_losses = []
-    test_losses = []
+    validate_losses = []
 
     for ep_idx in range(1, epochs + 1):
         print("\t[ Epoch %d / %d ]" % (ep_idx, epochs), end="", flush=True)
@@ -136,27 +136,27 @@ def train(model, dl_train, dl_test, epochs=20, display_every=10):
             not bool(ep_idx % display_every)
         )
 
-        test_loss = evaluate(
+        validate_loss = evaluate(
             model, 
-            dl_test,
+            dl_validate,
             crit,
             Config.DEVICE
         )
 
-        print("\tTrain: %6.5f\tTest: %6.5f" % (train_loss, test_loss))
+        print("\tTrain: %6.5f\tValidate: %6.5f" % (train_loss, validate_loss))
 
         train_losses.append(train_loss)
-        test_losses.append(test_loss)
+        validate_losses.append(validate_loss)
 
     print("Training complete!")
 
-    return train_losses, test_losses
+    return train_losses, validate_losses
 
 
 if (__name__ == "__main__"):
-    dl_train, dl_test, _ = get_oasis_dataloaders(Config.DATA_DIR, Config.BATCH_SIZE, Config.SUBSET_SIZE)
+    dl_train, dl_validate, _ = get_oasis_dataloaders(Config.DATA_DIR, Config.BATCH_SIZE, Config.SUBSET_SIZE)
     model = UNet(Config.IN_CHANNELS, Config.NUM_CLASSES)
-    train_loss, test_loss = train(model, dl_train, dl_test, epochs=Config.NUM_EPOCHS, display_every=Config.DISPLAY_EVERY)
+    train_loss, validate_loss = train(model, dl_train, dl_validate, epochs=Config.NUM_EPOCHS, display_every=Config.DISPLAY_EVERY)
 
     torch.save(model.state_dict(), Config.MODEL_SAVE_FILE)
-    torch.save([train_loss, test_loss, []], Config.LOSS_SAVE_FILE)
+    torch.save([train_loss, validate_loss, []], Config.LOSS_SAVE_FILE)
