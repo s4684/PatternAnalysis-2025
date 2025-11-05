@@ -6,6 +6,12 @@ class InConv(nn.Module):
     def __init__(self, in_chls, out_chls):
         super().__init__()
 
+        # Use convolution with a 3x3 kernel, padding width of 1 and no dilation
+        # This suits the MRI data as its patterns are closely related to its near neighbours
+        # instead of regarding the entire image
+
+        # Use the ReLU activation function as a suitable compromise on computational efficiency and 
+        # model complexity while trying to replicate the sigmoid function
         self.net = nn.Sequential(
             nn.Conv2d(in_chls, out_chls, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_chls),
@@ -22,6 +28,7 @@ class InConv(nn.Module):
 class DownLayer(nn.Module):
     def __init__(self, in_chls, out_chls):
         super().__init__()
+        # use 2x2 max pooling for data downscaling
         self.pool = nn.MaxPool2d(kernel_size=2)
         self.conv = InConv(in_chls, out_chls)
 
@@ -50,6 +57,7 @@ class UpLayer(nn.Module):
 class OutConv(nn.Module):
     def __init__(self, in_chls, out_chls):
         super().__init__()
+        # Final 1x1 convolution to establish logits
         self.conv = nn.Conv2d(in_chls, out_chls, kernel_size=1)
 
     def forward(self, x):
@@ -62,6 +70,8 @@ class UNet(nn.Module):
         super().__init__()
 
         c = [base_chls * 2**i for i in range(5)]
+
+        # Network architecture
 
         self.input = InConv(in_chls, base_chls)
         self.down1 = DownLayer(c[0], c[1])
@@ -82,6 +92,7 @@ class UNet(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
 
+        # Upsampling with skips from downsampling train
         return self.output(
             self.up4(
                 self.up3(
@@ -99,15 +110,18 @@ class MCDiceLoss(nn.Module):
         self.eps = eps
 
     def forward(self, logits, target):
-        # Convert raw output to probabilities
+        # Convert raw output to probabilities using softmax function, ideal for predictions over several classes
         probs = logits.softmax(dim=1)
+        # Batch size, num classes, height, width
         B, C, H, W = probs.shape
 
+        # One-hot encoding to finalise predictions, followed by dimension adjustments
         target_oh = F.one_hot(target, num_classes=C).permute(0, 3, 1, 2).float()
 
         probs_flat = probs.reshape(B, C, -1)
         target_flat = target_oh.reshape(B, C, -1)
 
+        # Cross product yields the intersect
         intersect = (probs_flat * target_flat).sum(dim=-1)
         total = probs_flat.sum(dim=-1) + target_flat.sum(dim=-1)
 
