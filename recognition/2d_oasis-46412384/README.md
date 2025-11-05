@@ -13,7 +13,7 @@ Each 2D data slice is segmented into 4 classes, distinguished by equally distrib
 
 For example:
 
-![hello](_tdmodel/disp/1.png)   change image
+![example batch prediction visualisation](ex_figs/ex-batch_preds.png)
 
 
 ## Model Analysis
@@ -62,7 +62,12 @@ This will load the saved model and test it using the yet unseen test dataset.
 Its final result is displayed in output and the visualisation of predictions in the first batch is saved to disk.\
 For example:
 
-![example_test_output](_tdmodel/disp/eval.png)
+![example evaluation batch visualisation](ex_figs/ex-eval_preds.png)
+
+This module will also model the loss results from training and validation (`_tdmodel/plot/`).\
+For example:
+
+![example cross-entropy loss plot](ex_figs/ex-celoss.png)
 
 
 ## Dependencies
