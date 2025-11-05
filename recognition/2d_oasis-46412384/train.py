@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 
 class Config:
+    # Storage and output paths
     DATA_DIR = "data/"
     MODEL_SAVE_FILE = "_tdmodel/model.dat"
     LOSS_SAVE_FILE = "_tdmodel/loss.dat"
@@ -15,20 +16,35 @@ class Config:
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+    # Data subset size. Datasets will be trimmed to this size, if necessary. Set to -1 to not trim datasets
     SUBSET_SIZE = -1
 
+    # Gradient for AdaM optimiser momentum. Adjusts the weight of the momentum-based component to AdaM
+    # The momentum technique regards an adaptive gradient descent algorithm, optimising the convergence rate 
+    # while avoiding oscillations and divergence caused by excessive momentum
+    # A greater learning rate may result in a more agressive model progression, however reduces it's stability
     LEARN_RATE = 1e-3
 
+    # Data parameters. These are unlikely to change for the OASIS dataset
     IN_CHANNELS = 1
     NUM_CLASSES = 4
+
+    # Model parameters
     BATCH_SIZE = 4
     NUM_EPOCHS = 26
+
+    # Output parameters
     DISPLAY_EVERY = 2
 
+    # Internal variables
     display_count = 0
 
 
 def train_epoch(model, dl, optim, crit, dice_fn, num_classes, dev="cpu", display=False):
+    """
+    Train and test a model for a single run of the dataset
+    """
+
     loss = 0
     dice = 0
 
@@ -38,18 +54,22 @@ def train_epoch(model, dl, optim, crit, dice_fn, num_classes, dev="cpu", display
         imgs = imgs.to(dev)
         msks = msks.to(dev)
 
+        # Reset the optimiser
         optim.zero_grad()
 
+        # Compute the model predictions
         logits = model(imgs)
 
         if (display and bat_idx == 0):
             display_batch(imgs, msks, logits)
 
+        # Evaluate the prediction loss
         bat_loss = crit(logits, msks)
         bat_loss.backward()
 
         bat_dice = dice_fn(logits, msks).mean()
 
+        # Advance the optimiser
         optim.step()
 
         loss += bat_loss.item()
@@ -59,6 +79,10 @@ def train_epoch(model, dl, optim, crit, dice_fn, num_classes, dev="cpu", display
 
 
 def evaluate(model, dl, crit, dice_fn, dev="cpu", display=False):
+    """
+    Test a model for a single run of the dataset
+    """
+
     loss = 0
     dice = 0
 
@@ -68,11 +92,13 @@ def evaluate(model, dl, crit, dice_fn, dev="cpu", display=False):
         imgs = imgs.to(dev)
         msks = msks.to(dev)
 
+        # Computer the model predictions
         logits = model(imgs)
 
         if (display and bat_idx == 0):
             display_batch(imgs, msks, logits, save_file="eval.png")
 
+        # Evaluate the prediction loss
         bat_loss = crit(logits, msks)
         bat_dice = dice_fn(logits, msks).mean()
 
@@ -125,12 +151,16 @@ def display_batch(imgs, msks, logits, save_file=None):
 
 
 def train(model, dl_train, dl_validate, epochs=20, display_every=10):
+    """
+    Run full training loop for a model
+    """
+
     model.to(Config.DEVICE)
     print("\nStarting model training on %s" % Config.DEVICE)
 
+    # Establish model training accessories
     crit = nn.CrossEntropyLoss()
     dice_fn = MCDiceLoss()
-    # Use AdaM optimiser
     optim = Adam(model.parameters(), lr=Config.LEARN_RATE)
 
     train_losses = []
@@ -139,6 +169,7 @@ def train(model, dl_train, dl_validate, epochs=20, display_every=10):
     validate_losses = []
     validate_dices = []
 
+    # Run each training epoch
     for ep_idx in range(1, epochs + 1):
         print("\t[ Epoch %d / %d ]" % (ep_idx, epochs), end="", flush=True)
         
