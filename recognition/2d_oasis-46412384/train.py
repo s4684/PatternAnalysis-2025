@@ -15,14 +15,14 @@ class Config:
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    SUBSET_SIZE = 100
+    SUBSET_SIZE = -1
 
     LEARN_RATE = 1e-3
 
     IN_CHANNELS = 1
     NUM_CLASSES = 4
     BATCH_SIZE = 4
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 26
     DISPLAY_EVERY = 2
 
     display_count = 0
