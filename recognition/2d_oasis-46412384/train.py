@@ -11,6 +11,7 @@ class Config:
     MODEL_SAVE_FILE = "_tdmodel/model.dat"
     LOSS_SAVE_FILE = "_tdmodel/loss.dat"
     DISPLAY_SAVE_PATH = "_tdmodel/disp/"
+    PLOT_SAVE_PATH = "_tdmodel/plot/"
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
