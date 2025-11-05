@@ -76,7 +76,7 @@ The final result of this model achieved a loss score of **0.29355** and dice sco
 
 > Training loss scores continued to decrease with each epoch, reaching a minimum of **0.20137**, while validation scores converged towards, approximately, **0.29**.
 
-> Similarly, training dice scores show decredation across epochs, reaching **0.33267**, validation scores converged about **0.4**
+> Similarly, training dice scores show decline across epochs, reaching **0.33267**, validation scores converged about **0.4**
 
 While it is likely possible to reach a convergence of training loss scores, given more epochs, this would only result in model overfitting, as the validation scores had already reached their convergence points.\
 The resulting output is:
