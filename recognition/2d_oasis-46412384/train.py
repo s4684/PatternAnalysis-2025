@@ -15,14 +15,14 @@ class Config:
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    SUBSET_SIZE = -1
+    SUBSET_SIZE = 100
 
     LEARN_RATE = 1e-3
 
     IN_CHANNELS = 1
     NUM_CLASSES = 4
     BATCH_SIZE = 4
-    NUM_EPOCHS = 26
+    NUM_EPOCHS = 12
     DISPLAY_EVERY = 2
 
     display_count = 0
@@ -107,8 +107,11 @@ def display_batch(imgs, msks, logits, save_file=None):
             logit_data = OasisDataset.encode_mask(logit_data)
 
             axes[bat_idx][0].imshow(img_data, cmap="gray")
+            axes[bat_idx][0].axis("off")
             axes[bat_idx][1].imshow(msk_data, cmap="gray")
+            axes[bat_idx][1].axis("off")
             axes[bat_idx][2].imshow(logit_data, cmap="gray")
+            axes[bat_idx][2].axis("off")
 
     plt.tight_layout()
 
